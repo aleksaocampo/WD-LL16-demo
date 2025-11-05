@@ -27,6 +27,54 @@ const chatbotMessages = document.getElementById('chatbotMessages');
 const chatbotInput = document.getElementById('chatbotInput');
 const chatbotSendBtn = document.getElementById('chatbotSendBtn');
 
+// --- Sound helpers (WebAudio) -------------------------------------------------
+// Use the WebAudio API to synthesize short beeps so no external files are needed.
+let audioCtx = null;
+function ensureAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function playTone(freq = 440, duration = 0.12, type = 'sine', volume = 0.12) {
+  try {
+    ensureAudioCtx();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type;
+    o.frequency.value = freq;
+    g.gain.value = volume;
+    o.connect(g);
+    g.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+    // small attack/decay for a pleasant click
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.linearRampToValueAtTime(volume, now + 0.01);
+    o.start(now);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    o.stop(now + duration + 0.02);
+  } catch (e) {
+    // Audio failures should not break the app
+    console.warn('Audio playback failed', e);
+  }
+}
+
+function playSendSound() {
+  // short high beep for outgoing message
+  playTone(1000, 0.06, 'sine', 0.10);
+}
+
+function playReceiveSound() {
+  // slightly lower, longer tone for incoming message
+  playTone(640, 0.12, 'sine', 0.12);
+}
+
+function playErrorSound() {
+  // low buzzy tone for errors
+  playTone(220, 0.18, 'sawtooth', 0.16);
+}
+// ------------------------------------------------------------------------------
+
 // Keep a short message history for the conversation (includes a system prompt).
 const messageHistory = [
   {
@@ -127,6 +175,8 @@ async function sendCurrentMessage() {
 
   // Append user message to UI and history
   appendMessage('user', text);
+  // Play a short send sound (user action is a user gesture so audio is allowed)
+  try { playSendSound(); } catch (e) { /* ignore */ }
   messageHistory.push({ role: 'user', content: text });
   chatbotInput.value = '';
 
@@ -151,11 +201,14 @@ async function sendCurrentMessage() {
     const assistantText = await callOpenAI();
     // stop animation and replace placeholder text with actual assistant reply
     clearInterval(thinkingInterval);
+    // play receive sound to indicate reply arrived
+    try { playReceiveSound(); } catch (e) { /* ignore */ }
     textNodeTarget.textContent = assistantText;
     messageHistory.push({ role: 'assistant', content: assistantText });
   } catch (err) {
     clearInterval(thinkingInterval);
     console.error(err);
+    try { playErrorSound(); } catch (e) { /* ignore */ }
     textNodeTarget.textContent = 'Sorry, something went wrong.';
     appendError(err.message);
   } finally {
