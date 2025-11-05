@@ -316,6 +316,42 @@ h1 {
   margin-bottom: 8px;
 }
 
+/* Chat message bubbles and spacing */
+.chat-message {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.chat-message.user {
+  justify-content: flex-end;
+}
+
+.chat-message.assistant {
+  justify-content: flex-start;
+}
+
+.chat-bubble {
+  max-width: 82%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.35;
+  white-space: pre-wrap; /* preserve line breaks */
+  word-wrap: break-word;
+}
+
+.chat-message.user .chat-bubble {
+  background: #e6f1e6;
+  color: #111;
+}
+
+.chat-bubble p {
+  margin: 6px 0;
+}
+
 /* Make sure the Material Icons font is used and sized correctly */
 .material-icons-outlined.chatbot-icon {
   font-family: 'Material Icons Outlined', 'Material Icons', Arial, sans-serif !important;
